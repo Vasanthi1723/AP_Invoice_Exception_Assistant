@@ -152,6 +152,19 @@ python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
 Open [http://localhost:8000](http://localhost:8000). Interactive API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
+## Deploy to Render
+
+The repository includes [`render.yaml`](render.yaml), which defines the web service, build command, start command, health check, and Gemini secret.
+
+1. Create or sign in to a [Render](https://render.com) account.
+2. Select **New > Blueprint** and connect the GitHub repository `Vasanthi1723/AP_Invoice_Exception_Assistant`.
+3. Confirm that Render detects `render.yaml` and creates the `ap-invoice-exception-assistant` web service.
+4. Add the `GEMINI_API_KEY` environment variable when Render prompts for it. Use the value from Google AI Studio; do not put the key in GitHub.
+5. Select **Apply**. Render installs `backend/requirements.txt`, starts Uvicorn on Render's `$PORT`, and checks `/api/health`.
+6. Open the generated `https://...onrender.com` URL after the first deploy finishes.
+
+The free Render service may sleep when idle, so the first request after inactivity can take longer. The application currently stores only the latest comparison in memory and allows unrestricted CORS for local development; add authentication, persistent storage, upload limits, and a restricted CORS policy before using it with real invoices.
+
 ## Using the Application
 
 1. Start the FastAPI server.
