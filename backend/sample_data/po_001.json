@@ -1,0 +1,39 @@
+{
+  "po_number": "PO-2024-0042",
+  "vendor": "Acme Industrial Supplies",
+  "date": "2024-11-15",
+  "currency": "USD",
+  "tax_rate": 0.08,
+  "line_items": [
+    {
+      "line_number": 1,
+      "item_code": "AIS-304-BOLT",
+      "description": "Stainless Steel Hex Bolt M10x50",
+      "quantity": 500,
+      "unit_price": 0.45,
+      "unit": "EA",
+      "total": 225.00
+    },
+    {
+      "line_number": 2,
+      "item_code": "AIS-WASHER-10",
+      "description": "Flat Washer M10 Zinc Plated",
+      "quantity": 500,
+      "unit_price": 0.12,
+      "unit": "EA",
+      "total": 60.00
+    },
+    {
+      "line_number": 3,
+      "item_code": "AIS-NUT-M10",
+      "description": "Hex Nut M10 Stainless Steel",
+      "quantity": 500,
+      "unit_price": 0.22,
+      "unit": "EA",
+      "total": 110.00
+    }
+  ],
+  "subtotal": 395.00,
+  "tax": 31.60,
+  "total": 426.60
+}

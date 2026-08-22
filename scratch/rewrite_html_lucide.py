@@ -1,0 +1,342 @@
+import os
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AP Invoice Exception Assistant — AI-powered invoice validation and exception detection">
+  <title>AP Invoice Exception Assistant</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Lucide Icons CDN (SVG-based, replaces emojis) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E85D3F' stroke-width='2'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14,2 14,8 20,8'/></svg>">
+</head>
+
+<body>
+  <div id="app">
+    <div class="app-layout">
+
+      <!-- MAIN CONTENT AREA -->
+      <div class="main-content" id="main-content">
+
+        <!-- Header -->
+        <header class="app-header" id="app-header">
+          <div class="app-header__left">
+            <div class="app-header__logo">
+              <i data-lucide="file-text" class="logo-icon"></i>
+            </div>
+            <div class="app-header__text">
+              <h1 class="app-header__title">AP Invoice Exception Assistant</h1>
+              <div class="app-header__subtitle">AI-powered invoice validation and exception detection</div>
+            </div>
+          </div>
+          <div class="app-header__right">
+            <div class="app-header__status">
+              <span class="status-dot"></span>
+              <span id="api-status">System Online</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Info Strip (Demo Banner) -->
+        <div class="info-strip" id="demo-banner">
+          <div class="info-strip__icon">
+            <i data-lucide="info" class="strip-icon"></i>
+          </div>
+          <div class="info-strip__text">
+            <strong>Demo Mode</strong>
+            <span class="info-strip__desc">Upload an invoice and select a purchase order to automatically extract
+              invoice data, compare line items, and identify exceptions.</span>
+            <span id="api-key-warning" class="hidden text-warning">
+              No Gemini API key configured — using demo data only.
+            </span>
+          </div>
+        </div>
+
+        <!-- Top Workspace (2 Columns) -->
+        <div class="workspace-grid">
+
+          <!-- Column 1: Invoice Upload -->
+          <div class="card invoice-card animate-slide-up" style="animation-delay:0.1s">
+            <div class="card__header">
+              <div class="card__title-group">
+                <div class="card__icon card__icon--coral">
+                  <i data-lucide="upload-cloud"></i>
+                </div>
+                <h2 class="card__title">Invoice Document</h2>
+              </div>
+            </div>
+            <div class="upload-zone" id="invoice-upload-zone">
+              <div class="upload-zone__gfx">
+                <i data-lucide="file-up" class="upload-icon"></i>
+              </div>
+              <div class="upload-zone__text">Drop invoice here or click to browse</div>
+              <div class="upload-zone__hint">Supports PDF, PNG, JPG, WebP</div>
+              <div class="upload-zone__filename hidden" id="invoice-filename"></div>
+              <input type="file" id="invoice-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none">
+            </div>
+            <div class="sample-invoices-section mt-md">
+              <span class="section-label">Sample invoices:</span>
+              <div class="sample-invoices mt-sm" id="sample-invoices-container"></div>
+            </div>
+          </div>
+
+          <!-- Column 2: PO Selection -->
+          <div class="card po-card animate-slide-up" style="animation-delay:0.2s">
+            <div class="card__header">
+              <div class="card__title-group">
+                <div class="card__icon card__icon--teal">
+                  <i data-lucide="package"></i>
+                </div>
+                <h2 class="card__title">Purchase Order</h2>
+              </div>
+            </div>
+            <div class="po-selector">
+              <label class="po-selector__label" for="po-select">Select a Purchase Order</label>
+              <div class="select-wrapper">
+                <select id="po-select">
+                  <option value="">— Choose a PO —</option>
+                </select>
+                <i data-lucide="chevron-down" class="select-arrow"></i>
+              </div>
+            </div>
+            <div id="po-preview" class="po-preview-container mt-md" style="display:none;">
+              <div class="table-wrapper">
+                <table class="po-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Item Code</th>
+                      <th>Description</th>
+                      <th class="text-right">Qty</th>
+                      <th class="text-right">Unit Price</th>
+                      <th class="text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="po-preview-body"></tbody>
+                </table>
+              </div>
+              <div class="po-totals mt-sm">
+                <span id="po-summary-text"></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Compare Button -->
+        <div class="compare-action" id="compare-action">
+          <button class="btn btn--primary btn--analyze" id="compare-btn" disabled>
+            <i data-lucide="scan-search" class="btn-icon"></i>
+            Analyze Invoice
+          </button>
+        </div>
+
+        <!-- Results Section (hidden until comparison runs) -->
+        <section class="results-section" id="results-section">
+
+          <div class="results-header mb-lg">
+            <div class="results-header__left">
+              <i data-lucide="bar-chart-2" class="results-icon"></i>
+              <h2>
+                Comparison Results
+                <span id="status-badge"></span>
+              </h2>
+            </div>
+            <button class="btn btn--secondary btn--sm" id="new-comparison-btn">
+              <i data-lucide="rotate-ccw" class="btn-icon-sm"></i>
+              New Comparison
+            </button>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="summary-grid mb-xl" id="summary-strip"></div>
+
+          <!-- Risk Analysis Bar -->
+          <div class="risk-panel card mb-xl animate-slide-up" id="risk-panel" style="display:none;">
+            <div class="risk-panel__header">
+              <div class="card__title-group">
+                <div class="card__icon card__icon--coral">
+                  <i data-lucide="shield-alert"></i>
+                </div>
+                <h3 class="card__title">Risk Analysis</h3>
+              </div>
+              <span class="risk-level-badge" id="risk-level-badge">Calculating…</span>
+            </div>
+            <div class="risk-bars" id="risk-bars">
+              <div class="risk-bar-item">
+                <div class="risk-bar-item__label">Price Risk</div>
+                <div class="risk-bar-item__track"><div class="risk-bar-item__fill risk-bar-item__fill--price" id="risk-bar-price" style="width:0%"></div></div>
+                <div class="risk-bar-item__pct" id="risk-pct-price">0%</div>
+              </div>
+              <div class="risk-bar-item">
+                <div class="risk-bar-item__label">Quantity Risk</div>
+                <div class="risk-bar-item__track"><div class="risk-bar-item__fill risk-bar-item__fill--qty" id="risk-bar-qty" style="width:0%"></div></div>
+                <div class="risk-bar-item__pct" id="risk-pct-qty">0%</div>
+              </div>
+              <div class="risk-bar-item">
+                <div class="risk-bar-item__label">Tax Risk</div>
+                <div class="risk-bar-item__track"><div class="risk-bar-item__fill risk-bar-item__fill--tax" id="risk-bar-tax" style="width:0%"></div></div>
+                <div class="risk-bar-item__pct" id="risk-pct-tax">0%</div>
+              </div>
+              <div class="risk-bar-item">
+                <div class="risk-bar-item__label">Overall Match Rate</div>
+                <div class="risk-bar-item__track"><div class="risk-bar-item__fill risk-bar-item__fill--match" id="risk-bar-match" style="width:0%"></div></div>
+                <div class="risk-bar-item__pct" id="risk-pct-match">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extraction Preview -->
+          <div class="extraction-preview mb-xl">
+            <div class="section-title-wrapper mb-md">
+              <div class="section-title-left">
+                <i data-lucide="scan" class="section-icon"></i>
+                <h2 class="section-title">Extraction Preview</h2>
+              </div>
+              <span class="confidence-badge" id="confidence-badge"></span>
+            </div>
+            <div class="preview-container">
+              <div class="preview-pane card">
+                <div class="preview-pane__header">
+                  <i data-lucide="file-text" class="pane-icon"></i>
+                  Original Invoice
+                </div>
+                <div class="preview-pane__content" id="original-invoice-preview">
+                  <div class="empty-state">
+                    <i data-lucide="file-question" class="empty-icon"></i>
+                    <div class="empty-state__text">Preview unavailable</div>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-pane card">
+                <div class="preview-pane__header">
+                  <i data-lucide="table-2" class="pane-icon"></i>
+                  Extracted Data
+                </div>
+                <div class="preview-pane__content" id="extracted-data-preview">
+                  <div class="empty-state">
+                    <i data-lucide="database" class="empty-icon"></i>
+                    <div class="empty-state__text">Extracted data will appear here</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Line-by-Line Comparison -->
+          <div class="comparison-section mb-xl" id="comparison-table-section">
+            <div class="section-title-wrapper mb-md">
+              <div class="section-title-left">
+                <i data-lucide="git-compare" class="section-icon"></i>
+                <h2 class="section-title">Line-by-Line Comparison</h2>
+              </div>
+            </div>
+            <div class="card table-card">
+              <div class="table-responsive">
+                <table class="comparison-table" id="comparison-table">
+                  <thead>
+                    <tr>
+                      <th>Match</th>
+                      <th style="width: 25%;">Description</th>
+                      <th class="text-right">PO Qty</th>
+                      <th class="text-right">Inv Qty</th>
+                      <th class="text-right">PO Price</th>
+                      <th class="text-right">Inv Price</th>
+                      <th class="text-right">PO Total</th>
+                      <th class="text-right">Inv Total</th>
+                      <th>Flags</th>
+                    </tr>
+                  </thead>
+                  <tbody id="comparison-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exception Details -->
+          <div class="exceptions-section mb-xl" id="exceptions-section">
+            <div class="section-title-wrapper mb-md">
+              <div class="section-title-left">
+                <i data-lucide="flag" class="section-icon"></i>
+                <h2 class="section-title">Exception Details</h2>
+              </div>
+              <div class="text-muted small" id="exception-count-label"></div>
+            </div>
+            <div class="exception-list" id="exception-list"></div>
+          </div>
+
+        </section>
+
+      </div> <!-- End Main Content -->
+
+      <!-- CHATBOT PANEL (Split-screen drawer) -->
+      <aside class="chat-panel" id="chat-panel">
+        <div class="chat-panel__header">
+          <div class="chat-panel__title-group">
+            <div class="chat-panel__avatar">
+              <i data-lucide="bot"></i>
+            </div>
+            <div class="chat-panel__title">Exception Assistant</div>
+          </div>
+          <button class="chat-panel__close" id="chat-close-btn" title="Close chat">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-message chat-message--system" id="chat-empty-state">
+            <i data-lucide="message-circle" class="chat-empty-icon"></i>
+            <span>Ask questions about the invoice analysis.</span>
+          </div>
+        </div>
+
+        <div class="chat-suggestions" id="chat-suggestions">
+          <div class="chat-suggestions__title hidden">Suggested Questions</div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="chat-input-wrapper">
+            <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." autocomplete="off">
+            <button class="chat-send-btn" id="chat-send-btn" disabled title="Send message">
+              <i data-lucide="send"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Chat Toggle FAB -->
+  <button class="chat-toggle-fab" id="chat-toggle-fab" title="Open exception assistant">
+    <i data-lucide="message-circle"></i>
+  </button>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Analyzing invoice…</div>
+      <div class="loading-step" id="loading-step">Extracting line items with Gemini Vision</div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    // Initialize Lucide icons after DOM load
+    document.addEventListener('DOMContentLoaded', function() {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+
+</html>
+"""
+
+with open(r'c:\Users\VASANTHI\OneDrive\Desktop\AP Invoice\frontend\index.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Overwrote index.html successfully.")

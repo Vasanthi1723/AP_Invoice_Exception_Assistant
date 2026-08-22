@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+ui-ux-pro-max-skill/
+.DS_Store

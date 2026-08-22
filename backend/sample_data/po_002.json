@@ -1,0 +1,48 @@
+{
+  "po_number": "PO-2024-0087",
+  "vendor": "Global Office Solutions",
+  "date": "2024-10-28",
+  "currency": "USD",
+  "tax_rate": 0.065,
+  "line_items": [
+    {
+      "line_number": 1,
+      "item_code": "GOS-PAPER-A4",
+      "description": "Premium A4 Copy Paper 80gsm (5 Ream Box)",
+      "quantity": 50,
+      "unit_price": 24.99,
+      "unit": "BOX",
+      "total": 1249.50
+    },
+    {
+      "line_number": 2,
+      "item_code": "GOS-TONER-HP26A",
+      "description": "HP 26A Black Toner Cartridge CF226A",
+      "quantity": 10,
+      "unit_price": 89.50,
+      "unit": "EA",
+      "total": 895.00
+    },
+    {
+      "line_number": 3,
+      "item_code": "GOS-CHAIR-ERG1",
+      "description": "Ergonomic Office Chair with Lumbar Support",
+      "quantity": 5,
+      "unit_price": 349.00,
+      "unit": "EA",
+      "total": 1745.00
+    },
+    {
+      "line_number": 4,
+      "item_code": "GOS-DESK-SIT",
+      "description": "Sit-Stand Adjustable Desk 60x30",
+      "quantity": 5,
+      "unit_price": 499.00,
+      "unit": "EA",
+      "total": 2495.00
+    }
+  ],
+  "subtotal": 6384.50,
+  "tax": 414.99,
+  "total": 6799.49
+}
